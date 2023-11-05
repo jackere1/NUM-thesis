@@ -1,0 +1,218 @@
+\chapter{Кодын хэрэгжүүлэлт}
+
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Next.js Auth ашигласан байдал}]
+import NextAuth, { AuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import GithubProvider from "next-auth/providers/github";
+import CredentialsProvider from "next-auth/providers/credentials";
+
+export const authOptions: AuthOptions = {
+  providers: [
+    CredentialsProvider({
+      id: "coldbrains-credentials",
+      name: "Coldbrains",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials, req) {
+        const reqBody = {
+          username: credentials?.username,
+          password: credentials?.password,
+        };
+
+        const res = await fetch(`${process.env.APP_URL}/api/login`, {
+          method: "POST",
+          body: JSON.stringify(reqBody),
+        });
+        if (res.status === 200) {
+          const userCred = await res.json();
+          return userCred;
+        }
+        return null;
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    GithubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    signOut: "/problems",
+  },
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
+
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Хэрэглэгчийн компонент дээр дата render хийж буй байдал}]
+"use client";
+import CodeEditor from "@/components/editor/codeEditor";
+import MainLayout from "@/components/layouts/mainLayout/mainLayout";
+import { Box, Grid, Typography } from "@mui/material";
+import { use } from "react";
+
+async function getData() {
+  try {
+    const res = await fetch(
+      "https://api.sampleapis.com/codingresources/codingResources"
+    );
+    if (res.ok) {
+      return res.json();
+    }
+  } catch (e) {
+    return [];
+  }
+
+  throw new Error("Failed to fetch data");
+}
+
+export default async function Problem({ params }: any) {
+  const data = await getData();
+  const data = [
+    {},
+    {
+      title: "Эрэмбэлсэн хоёр дарааллын медиан",
+      description:
+        "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maxime et, aperiam accusamus quisquam odio laborum ipsa vero atque saepe tempora earum iste sapiente? Blanditiis quas quasi, unde aliquam nam alias!",
+      boilerplate: "def addTwoNumbers(num1, num2):",
+    },
+  ];
+  const problemId = params.id;
+
+  return (
+    <MainLayout>
+      <Box width={"100%"} mt={2}>
+        <Typography variant="h4">{data[problemId].title}</Typography>
+      </Box>
+      <Grid container spacing={2} my={1}>
+        <Grid item md={5} xs={12} bgcolor={"var(--primaryBlack)"} borderRadius={"20px"}>
+          <Typography variant="body2">{data[problemId].description}</Typography>
+        </Grid>
+        <Grid item md={7} xs={12}>
+          <CodeEditor boilerplate={data[problemId].boilerplate} />
+        </Grid>
+      </Grid>
+    </MainLayout>
+  );
+}
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={MUI ашиглаж pagination хийж буй жишээ}]
+"use client";
+import React, { useState } from "react";
+import { Pagination, Box } from "@mui/material";
+
+export default function ProblemPagination({ page, onPageChange, pageCount }: any) {
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    newPage: number
+  ) => {
+    onPageChange(newPage);
+  };
+
+  return (
+    <Pagination
+      count={pageCount}
+      page={page}
+      onChange={handlePageChange}
+      color="primary"
+      sx={{
+        '& .MuiPaginationItem-root': {
+          color: "white",
+          backgroundColor: "var(--primaryBlack)",
+        },
+        '& .MuiPaginationItem-page.Mui-selected': {
+          backgroundColor: "brown",
+          color: "white"
+        },
+      }}
+    />
+  );
+}
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={ExpressJS auth сервер}]
+import express from "express";
+import "dotenv/config";
+import bodyParser from "body-parser";
+import cors from "cors";
+
+import loginRoute from "./routes/login.js";
+import registerRoute from "./routes/register.js";
+
+const PORT = process.env.APP_PORT;
+const app = express();
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use("/auth/login", loginRoute);
+app.use("/auth/register", registerRoute)
+
+app.listen(PORT, () => {
+  console.log(`Coldbrians auth server is listening on: ${PORT}`);
+})
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={python-shell санг ашиглаж буй байдал}]
+const express = require("express");
+const cors = require("cors");
+
+const pythonShell = require("python-shell");
+const vm = require("vm");
+
+const app = express();
+const port = 8080;
+
+app.use(cors());
+app.use(express.text());
+
+app.post("/python", (req, res) => {
+    const code = req.body;
+
+    pythonShell.PythonShell.runString(code, null)
+    .then((messages) => {
+        console.log(messages);
+        res.json({ passOrFail: messages.join() });
+    })
+    .catch((err) => {
+        res.json({
+        passOrFail:
+            "Your code has issues. Please use print() method to output.",
+        });
+    });
+}); 
+
+app.post("/javascript", (req, res) => {
+    const code = req.body;
+
+    const sandbox = { result: null };
+
+    const script = new vm.Script(code);
+    const context = new vm.createContext(sandbox);
+    script.runInContext(context);
+    res.json({ passOrFail: sandbox.result });
+});
+
+app.listen(port, () => {
+    console.log("Python server listening.");
+});
+    
+\end{lstlisting}
