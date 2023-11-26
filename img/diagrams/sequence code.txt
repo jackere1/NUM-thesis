@@ -1,0 +1,41 @@
+@startuml
+actor Хэрэглэгч as User
+boundary NEXTjs as Frontend
+control ExpressJS as GatewayService
+control Coderunner as UserService
+database Firestore as DataLake
+
+activate DataLake
+
+group Бодолт илгээх
+activate Frontend
+User -> Frontend : Бодолт бүхий код
+Frontend -> GatewayService : Бодолтын мэдээлэл
+activate GatewayService
+end
+
+
+group Бодолт шалгах
+GatewayService -> DataLake: Бодлогын ID
+GatewayService <-- DataLake: Тест кейсүүд
+GatewayService -> UserService: Бодолт болон тест
+activate UserService
+GatewayService <-- UserService : Үр дүн
+end
+
+
+alt#Gold #D1FFBD Тэнцсэн
+GatewayService -> DataLake: Бодолтын мэдээлэл
+GatewayService <-- DataLake: Confirmation
+Frontend <-- GatewayService: Confirmation
+User <-- Frontend: Бодолтууд
+
+else #CCC Тэнцээгүй
+GatewayService -> User : Бодолтын ажиллагааны алдааны мэдээлэл
+GatewayService -> User : Унасан тест кейс
+destroy UserService
+destroy GatewayService
+deactivate DataLake
+deactivate Frontend
+end
+@enduml
