@@ -58,161 +58,509 @@ export { handler as GET, handler as POST };
 \end{lstlisting}
 
 
-\begin{lstlisting}[language=JavaScript, frame=single, caption={Хэрэглэгчийн компонент дээр дата render хийж буй байдал}]
-"use client";
-import CodeEditor from "@/components/editor/codeEditor";
-import MainLayout from "@/components/layouts/mainLayout/mainLayout";
-import { Box, Grid, Typography } from "@mui/material";
-import { use } from "react";
-
-async function getData() {
-  try {
-    const res = await fetch(
-      "https://api.sampleapis.com/codingresources/codingResources"
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Codemirror буюу @uiw/react-codemirror-ийн компонентийг ашиглаж буй байдал}]
+  "use client";
+  import CodeMirror from "@uiw/react-codemirror";
+  import {
+    aura,
+    abyss,
+    androidstudio,
+    dracula,
+    material,
+    copilot,
+    githubDark,
+    githubLight,
+    sublime,
+    xcodeDark,
+    xcodeLight,
+  } from "@uiw/codemirror-themes-all";
+  import { python } from "@codemirror/lang-python";
+  import { useState, useEffect } from "react";
+  import styles from "./page.module.css";
+  import { javascript } from "@codemirror/lang-javascript";
+  import { oneDark } from "@uiw/react-codemirror";
+  import { Language, Theme } from "./states/enum";
+  import {
+    Box,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    FormHelperText,
+  } from "@mui/material";
+  import { SelectChangeEvent } from "@mui/material/Select";
+  
+  export default function CodeEditor({
+    boilerplate,
+    problemId,
+    problemTitle,
+  }: {
+    boilerplate: string | undefined;
+    problemId: string;
+    problemTitle: string;
+  }) {
+    const [pythonCode, setPythonCode] = useState(boilerplate || "");
+    const [output, setOutput] = useState("");
+  
+    const [language, setLanguage] = useState("Python");
+    const [editorTheme, setEditorTheme] = useState(Theme.aura);
+    const [themeExt, setThemeExt] = useState(aura);
+  
+    const handleLanguageChange = (event: SelectChangeEvent) => {
+      setLanguage(event.target.value);
+    };
+  
+    const handleThemeChange = (event: SelectChangeEvent) => {
+      setEditorTheme(Number(event.target.value));
+      switch (Number(event.target.value)) {
+        case Theme.abyss:
+          setThemeExt(abyss);
+          break;
+        case Theme.androidstudio:
+          setThemeExt(androidstudio);
+          break;
+        case Theme.aura:
+          setThemeExt(aura);
+          break;
+        case Theme.dracula:
+          setThemeExt(dracula);
+          break;
+        case Theme.githubDark:
+          setThemeExt(githubDark);
+          break;
+        case Theme.githubLight:
+          setThemeExt(githubLight);
+          break;
+        case Theme.material:
+          setThemeExt(material);
+          break;
+        case Theme.oneDark:
+          setThemeExt(oneDark);
+          break;
+        case Theme.copilot:
+          setThemeExt(copilot);
+          break;
+        case Theme.sublime:
+          setThemeExt(sublime);
+          break;
+        case Theme.xcodeDark:
+          setThemeExt(xcodeDark);
+          break;
+        case Theme.xcodeLight:
+          setThemeExt(xcodeLight);
+          break;
+        default:
+          setThemeExt(aura);
+          break;
+      }
+    };
+  
+    const handlePythonOnChange = (newPythonCode: string) =>
+      setPythonCode(newPythonCode);
+    const handlePythonCodeRun = async () => {
+      const body = {
+        id: problemId,
+        code: pythonCode,
+        language: language,
+        title: problemTitle,
+      };
+      const response = await fetch("/api/run", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+  
+      console.log(response.status);
+      if (response.status !== 202) {
+        const data = await response.json();
+        console.log(data);
+        setOutput(data.traceback ?? "");
+      } else {
+        setOutput("Accepted");
+      }
+    };
+  
+    return (
+      <Box>
+        <Box
+          sx={{
+            bgcolor: "var(--primaryBlack)",
+            borderTopLeftRadius: "15px",
+            borderTopRightRadius: "15px",
+            boxShadow: "0 0 10px 5px rgb(0, 0, 0, 0.3)",
+          }}
+        >
+          <Box display={"flex"} justifyContent={"space-between"}>
+            <Select
+              variant="standard"
+              value={language}
+              onChange={handleLanguageChange}
+              sx={{
+                my: 1,
+                mx: 2,
+                px: 1,
+                width: "120px",
+                color: "#BBBBBB",
+                bgcolor: "#21202e",
+                borderRadius: "5px",
+                ".MuiSvgIcon-root ": {
+                  fill: "white",
+                },
+              }}
+            >
+              <MenuItem value={"Python"}>Python</MenuItem>
+              <MenuItem value={"JS"}>Javascript</MenuItem>
+              <MenuItem value={"CPP"}>C/C++</MenuItem>
+            </Select>
+            <Select
+              variant="standard"
+              value={editorTheme.toString()}
+              onChange={handleThemeChange}
+              sx={{
+                my: 1,
+                mx: 2,
+                px: 1,
+                width: "120px",
+                color: "#BBBBBB",
+                bgcolor: "#21202e",
+                borderRadius: "5px",
+                ".MuiSvgIcon-root ": {
+                  fill: "white",
+                },
+              }}
+            >
+              <MenuItem value={Theme.abyss}>abyss</MenuItem>
+              <MenuItem value={Theme.androidstudio}>androidstudio</MenuItem>
+              <MenuItem value={Theme.aura}>aura</MenuItem>
+              <MenuItem value={Theme.copilot}>copilot</MenuItem>
+              <MenuItem value={Theme.dracula}>dracula</MenuItem>
+              <MenuItem value={Theme.githubDark}>githubDark</MenuItem>
+              <MenuItem value={Theme.githubLight}>githubLight</MenuItem>
+              <MenuItem value={Theme.material}>material</MenuItem>
+              <MenuItem value={Theme.oneDark}>oneDark</MenuItem>
+              <MenuItem value={Theme.sublime}>sublime</MenuItem>
+              <MenuItem value={Theme.xcodeDark}>xcodeDark</MenuItem>
+              <MenuItem value={Theme.xcodeLight}>xcodeLight</MenuItem>
+            </Select>
+          </Box>
+          <CodeMirror
+            value={pythonCode}
+            onChange={handlePythonOnChange}
+            height="450px"
+            extensions={[python()]}
+            theme={themeExt}
+          />
+        </Box>
+  
+        <div className={styles.btn_submit} onClick={handlePythonCodeRun}>
+          Run
+        </div>
+        <div className={styles.target_output}>
+          <pre>{output}</pre>
+        </div>
+      </Box>
     );
-    if (res.ok) {
-      return res.json();
-    }
-  } catch (e) {
-    return [];
+  }
+  
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={NEXTjs бодлогууд авах серверийн endpoint}]
+  import { NextRequest, NextResponse } from "next/server";
+  import firestore from "@/configs/firebase";
+  import { getDocs, collection } from "firebase/firestore";
+  
+  
+  export async function GET(request: NextRequest) {
+    const querySnapshot = await getDocs(collection(firestore, "problems"));
+  
+    const problemsArray = querySnapshot.docs.map((doc) => {
+      return {
+        id: doc.id,
+        ...doc.data()
+      }
+    });
+  
+    return NextResponse.json(problemsArray);
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Бодлогуудыг cache-ээс fetch хийх component}]
+  "use client";
+  import MainLayout from "@/components/layouts/mainLayout/mainLayout";
+  import styles from "./page.module.css";
+  import CodeMirrorTest from "@/components/editor/codeEditor";
+  import ProblemList from "@/components/problemList/problemList";
+  import { useSession } from "next-auth/react";
+  import { useRouter } from "next/navigation";
+  import { useEffect, useState } from "react";
+  
+  export default function Problems() {
+    const [data, setData] = useState([]);
+    const { status } = useSession();
+    const router = useRouter();
+  
+    const columns = [
+      { field: "title", headerName: "Бодлого", flex: 1, minWidth: 300 },
+      { field: "status", headerName: "Төлөв", width: 150 },
+      { field: "difficulty", headerName: "Түвшин", width: 150 },
+    ];
+  
+    useEffect(() => {
+      fetch("/api/getProblems")
+        .then((res) => res.json())
+        .then((resJson) => {
+          setData(resJson);
+        });
+    }, []);
+  
+    const handleRowClick = (params: any) => {
+      if (status === "authenticated") {
+        router.push(`/problem/${params.row.id}`);
+      } else {
+        router.push("/login");
+      }
+    };
+  
+    return (
+      <MainLayout>
+        <ProblemList
+          data={data}
+          columns={columns}
+          onRowClick={handleRowClick}
+          rowsPerPage={12}
+        />
+      </MainLayout>
+    );
+  }
+  
+    
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={CollectionGroup query бичиж хэрэглэгчийн бодолтуудыг авч буй route}]
+import { getSession } from "@/providers/client-provider";
+import { NextRequest, NextResponse } from "next/server";
+import firestore from "@/configs/firebase";
+import { getDocs, collectionGroup } from "firebase/firestore";
+
+export async function GET(request: NextRequest) {
+  const sesdata = await getSession();
+  const email = sesdata?.user?.email;
+
+  const querySnapshot = await getDocs(collectionGroup(firestore, "solutions"));
+  const userSolutionDocs = querySnapshot.docs.filter((doc) => doc.id === email);
+  const userSolutions = userSolutionDocs.map((userDoc) => userDoc.data());
+
+  return NextResponse.json(userSolutions);
+}
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Бодолт явуулах NEXTjs endpoint}]
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/providers/client-provider";
+
+export async function POST(request: NextRequest) {
+  const { id, code, language, title } = await request.json();
+
+  const sesdata = await getSession();
+  if (!sesdata) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+  const userCred = sesdata?.user;
+
+  switch (language) {
+    case "Python":
+      fetch(process.env.PROD_PYTHON_SERVER!);
+      break;
+    default:
+      break;
   }
 
-  throw new Error("Failed to fetch data");
+  // const res = await fetch(`${process.env.DEV_SERVER}/${language}`, {
+  const res = await fetch(`${process.env.PROD_SERVER}/${language}`, {
+    method: "POST",
+    cache: "no-cache",
+    headers: new Headers({ "content-type": "application/json" }),
+    body: JSON.stringify({ id, code, userCred, title }),
+  });
+
+  return new NextResponse(res.body, { status: res.status });
 }
-
-export default async function Problem({ params }: any) {
-  const data = await getData();
-  const data = [
-    {},
-    {
-      title: "Эрэмбэлсэн хоёр дарааллын медиан",
-      description:
-        "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maxime et, aperiam accusamus quisquam odio laborum ipsa vero atque saepe tempora earum iste sapiente? Blanditiis quas quasi, unde aliquam nam alias!",
-      boilerplate: "def addTwoNumbers(num1, num2):",
-    },
-  ];
-  const problemId = params.id;
-
-  return (
-    <MainLayout>
-      <Box width={"100%"} mt={2}>
-        <Typography variant="h4">{data[problemId].title}</Typography>
-      </Box>
-      <Grid container spacing={2} my={1}>
-        <Grid item md={5} xs={12} bgcolor={"var(--primaryBlack)"} borderRadius={"20px"}>
-          <Typography variant="body2">{data[problemId].description}</Typography>
-        </Grid>
-        <Grid item md={7} xs={12}>
-          <CodeEditor boilerplate={data[problemId].boilerplate} />
-        </Grid>
-      </Grid>
-    </MainLayout>
-  );
-}
-
+    
 \end{lstlisting}
 
-\begin{lstlisting}[language=JavaScript, frame=single, caption={MUI ашиглаж pagination хийж буй жишээ}]
-"use client";
-import React, { useState } from "react";
-import { Pagination, Box } from "@mui/material";
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Хэрэглэгчийн нэрнээс Avatar үүсгэж буй байдал}]
+import { Avatar } from "@mui/material";
 
-export default function ProblemPagination({ page, onPageChange, pageCount }: any) {
-  const handlePageChange = (
-    event: React.ChangeEvent<unknown>,
-    newPage: number
-  ) => {
-    onPageChange(newPage);
+const stringToColor = (string: string) => {
+    let hash = 0;
+    let i;
+  
+    /* eslint-disable no-bitwise */
+    for (i = 0; i < string.length; i += 1) {
+      hash = string.charCodeAt(i) + ((hash << 5) - hash);
+    }
+  
+    let color = "#";
+  
+    for (i = 0; i < 3; i += 1) {
+      const value = (hash >> (i * 8)) & 0xff;
+      color += `00${value.toString(16)}`.slice(-2);
+    }
+    /* eslint-enable no-bitwise */
+  
+    return color;
+};
+
+type Size = "sm" | "md" | "lg";
+
+const stringAvatarProps = (name: string, size?: Size) => {
+  const fontSize = size === "sm" ? 18 : size === "lg" ? 60 : 20;
+
+  return {
+    sx: {
+      backgroundColor: stringToColor(name),
+      width: size === "sm" ? 30 : size === "lg" ? 100 : 40,
+      height: size === "sm" ? 30 : size === "lg" ? 100 : 40,
+      fontSize: fontSize,
+    },
+    children: `${name.charAt(0).toUpperCase()}`,
+  };
+};
+
+const StringAvatar = ({ name, size }: { name: string; size?: Size }) => {
+    return <Avatar {...stringAvatarProps(name, size)} />;
+}
+
+export default StringAvatar;
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Python хэлний middleware}]
+import { Router } from "express";
+import getFirebaseDB from "../db/firebase.js";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import axios from "axios";
+import "dotenv/config";
+
+const router = Router();
+
+router.post("/", async (req, res) => {
+  const code = req.body.code;
+  const problemId = req.body.id;
+  const problemTitle = req.body.title;
+  const { name: username, email, image } = req.body.userCred;
+
+  if (!code || !problemId) {
+    return res.sendStatus(409);
+  }
+
+  const docRef = doc(getFirebaseDB(), "testCases", problemId);
+  const docSnapshot = await getDoc(docRef);
+
+  if (!docSnapshot.exists()) {
+    return res.sendStatus(404);
+  }
+
+  const testCases = docSnapshot.get("testCase");
+  const reqBody = {
+    code,
+    testCases,
   };
 
-  return (
-    <Pagination
-      count={pageCount}
-      page={page}
-      onChange={handlePageChange}
-      color="primary"
-      sx={{
-        '& .MuiPaginationItem-root': {
-          color: "white",
-          backgroundColor: "var(--primaryBlack)",
-        },
-        '& .MuiPaginationItem-page.Mui-selected': {
-          backgroundColor: "brown",
-          color: "white"
-        },
-      }}
-    />
-  );
-}
+  try {
+    // const axiosRes = await axios.post("http://localhost:8081", reqBody);
+    const axiosRes = await axios.post(process.env.PROD_PYTHON_SERVER, reqBody);
+
+    if (axiosRes.status === 202) {
+      const docFields = {
+        code,
+        createdAt: serverTimestamp(),
+        language: "Python",
+        time: axiosRes.data,
+        username,
+        problemId,
+        problemTitle,
+        ...(image ? {image} : {})
+      };
+
+      const solutionDocRef = doc(
+        getFirebaseDB(),
+        "problemSolutions",
+        problemId,
+        "solutions",
+        email
+      );
+      await setDoc(solutionDocRef, docFields);
+    }
+    return res.status(axiosRes.status).json(axiosRes.data);
+  } catch (err) {
+    return res.sendStatus(503);
+  }
+});
+
+export default router;
 
 \end{lstlisting}
 
-\begin{lstlisting}[language=JavaScript, frame=single, caption={ExpressJS auth сервер}]
-import express from "express";
+\begin{lstlisting}[language=JavaScript, frame=single, caption={Stateless байдлаар firebase admin SDK ашиглалт}]
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 import "dotenv/config";
-import bodyParser from "body-parser";
-import cors from "cors";
 
-import loginRoute from "./routes/login.js";
-import registerRoute from "./routes/register.js";
+let db;
 
-const PORT = process.env.APP_PORT;
-const app = express();
+const firebaseConfigs = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+};
 
-app.use(cors());
-app.use(bodyParser.json());
-
-app.use("/auth/login", loginRoute);
-app.use("/auth/register", registerRoute)
-
-app.listen(PORT, () => {
-  console.log(`Coldbrians auth server is listening on: ${PORT}`);
-})
-
+export default function getFirebaseDB() {
+  if (!db) {
+    console.log("Initializing Firebase...");
+    const app = initializeApp(firebaseConfigs);
+    db = getFirestore(app);
+    console.log("Firebase initialized.");
+  }
+  return db;
+}
 \end{lstlisting}
 
-\begin{lstlisting}[language=JavaScript, frame=single, caption={python-shell санг ашиглаж буй байдал}]
-const express = require("express");
-const cors = require("cors");
+\begin{lstlisting}[language=JavaScript, frame=single, caption={ExpressJS серверийн оролт}]
+import express from "express";
+import cors from "cors";
+import { rateLimit } from "express-rate-limit";
 
-const pythonShell = require("python-shell");
-const vm = require("vm");
+import getFirebaseDB from "./db/firebase.js";
+import pythonRouter from "./routes/python.js";
 
 const app = express();
 const port = 8080;
+const limiter = rateLimit({
+  windowMs: 1000 * 15,
+  limit: 5,
+  message: "Too many requests. Please wait for 5 seconds and try again.",
+})
 
 app.use(cors());
-app.use(express.text());
+app.use(express.json());
+app.use(limiter)
 
-app.post("/python", (req, res) => {
-    const code = req.body;
+app.use("/python", pythonRouter);
+app.use("/js", null)
+app.use("/c", null)
 
-    pythonShell.PythonShell.runString(code, null)
-    .then((messages) => {
-        console.log(messages);
-        res.json({ passOrFail: messages.join() });
-    })
-    .catch((err) => {
-        res.json({
-        passOrFail:
-            "Your code has issues. Please use print() method to output.",
-        });
-    });
-}); 
-
-app.post("/javascript", (req, res) => {
-    const code = req.body;
-
-    const sandbox = { result: null };
-
-    const script = new vm.Script(code);
-    const context = new vm.createContext(sandbox);
-    script.runInContext(context);
-    res.json({ passOrFail: sandbox.result });
-});
+app.get("/", (req, res) => {
+  res.sendStatus(200);
+})
 
 app.listen(port, () => {
-    console.log("Python server listening.");
+  console.log("Python server listening.");
 });
-    
+
 \end{lstlisting}
